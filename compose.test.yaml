@@ -1,0 +1,8 @@
+services:
+  node:
+    build: .
+    network_mode: host
+    ipc: host
+    environment:
+      - ROS_DISCOVERY_SERVER=rosbot2r:11811
+    command: sleep 3600
