@@ -1,0 +1,89 @@
+x-husarnet-common:
+  &husarnet-common
+  ipc: shareable
+  volumes:
+    - /var/lib/husarnet
+  sysctls:
+    - net.ipv6.conf.all.disable_ipv6=0
+  cap_add:
+    - NET_ADMIN
+  devices:
+    - /dev/net/tun
+
+services:
+
+  # TALKER
+
+  talker:
+    build: .
+    network_mode: service:husarnet-talker
+    ipc: service:husarnet-talker
+    depends_on: 
+      husarnet-talker: { condition: service_healthy }
+    environment:
+      - ROS_DISCOVERY_SERVER=discovery-server:11811
+    command: ros2 run demo_nodes_cpp talker
+
+  husarnet-talker:
+    image: husarnet/husarnet:2.0.180
+    <<: *husarnet-common
+    networks:
+      - network_talker
+    environment:
+      - HOSTNAME=talker
+      - JOINCODE
+      - WAIT_HOSTNAMES=discovery-server
+      - HUSARNET_DEBUG=1
+
+  # LISTENER
+
+  listener:
+    build: .
+    network_mode: service:husarnet-listener
+    ipc: service:husarnet-listener
+    depends_on: 
+      husarnet-listener: { condition: service_healthy }
+    environment:
+      - ROS_DISCOVERY_SERVER=discovery-server:11811
+    command: ros2 run demo_nodes_cpp listener
+
+  husarnet-listener:
+    image: husarnet/husarnet:2.0.180
+    <<: *husarnet-common
+    networks:
+      - network_listener
+    environment:
+      - HOSTNAME=listener
+      - JOINCODE
+      - WAIT_HOSTNAMES=discovery-server
+      - HUSARNET_DEBUG=1
+
+  # DS
+
+  ds:
+    image: ros:iron-ros-core
+    network_mode: service:husarnet-ds
+    ipc: service:husarnet-ds
+    depends_on: 
+      husarnet-ds: { condition: service_healthy }  
+    command: fastdds discovery -i 0 -l discovery-server -p 11811
+
+  husarnet-ds:
+    image: husarnet/husarnet:2.0.180
+    <<: *husarnet-common
+    networks:
+      - network_ds
+    environment:
+      - HOSTNAME=discovery-server
+      - JOINCODE
+      - HUSARNET_DEBUG=1
+
+networks:
+  network_talker:
+    driver: bridge
+
+  network_listener:
+    driver: bridge
+
+  network_ds:
+    driver: bridge
