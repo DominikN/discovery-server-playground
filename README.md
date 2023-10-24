@@ -19,3 +19,9 @@ docker compose -f compose.ros2cli.yaml up
 ```
 docker compose -f compose.ros2router.yaml up
 ```
+
+## Clear the test network
+
+```
+./clear_network.sh
+```
